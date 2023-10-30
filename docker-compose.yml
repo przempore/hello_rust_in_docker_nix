@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  web:
+    build: .
+    volumes:
+      - ./hello_rust:/usr/src/app
+    ports:
+      - "8080:8080"
+    stdin_open: true
+    tty: true
+    command: [ "trunk", "serve", "--address=0.0.0.0" ]
+
+
