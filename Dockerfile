@@ -1,20 +1,27 @@
-# Use the official Rust image as a base image
-FROM rust:latest
+# Nix builder
+FROM nixos/nix:latest AS builder
 
-# Update the system and install any other dependencies you might need
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    pkg-config \
-    libssl-dev
+# Copy our source and setup our working dir.
+COPY . /tmp/build
+WORKDIR /tmp/build
 
-RUN rustup toolchain install nightly
-RUN rustup default nightly
-RUN rustup target add wasm32-unknown-unknown
+# Build our Nix environment
+RUN nix \
+    --extra-experimental-features "nix-command flakes" \
+    --option filter-syscalls false \
+    build
 
-RUN cargo install trunk
+# Copy the Nix store closure into a directory. The Nix store closure is the
+# entire set of Nix store values that we need for our build.
+RUN mkdir /tmp/nix-store-closure
+RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure
 
-# Create a working directory
-WORKDIR /usr/src/app
+# Final image is based on scratch. We copy a bunch of Nix dependencies
+# but they're fully self-contained so we don't need Nix anymore.
+FROM python:3.11-slim-buster
 
-# Copy your project's source code into the container
-COPY hello_rust .
+WORKDIR /app
+
+# Copy /nix/store
+COPY --from=builder /tmp/nix-store-closure /nix/store
+COPY --from=builder /tmp/build/result /app
