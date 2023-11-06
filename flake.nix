@@ -39,8 +39,9 @@
           filter = path: type:
             (lib.hasSuffix "\.html" path) ||
             (lib.hasSuffix "\.scss" path) ||
+            (lib.hasSuffix "\.ico" path) ||
             # Example of a folder for images, icons, etc
-            (lib.hasInfix "/assets/" path) ||
+            # (lib.hasInfix "/public/" path) ||
             # Default filter from crane (allow .rs files)
             (craneLib.filterCargoSources path type)
           ;
@@ -97,7 +98,6 @@
         };
 
         devShells.default = craneLib.devShell {
-          buildInputs = [ serve-app ];
           # Inherit inputs from checks.
           checks = self.checks.${system};
 
